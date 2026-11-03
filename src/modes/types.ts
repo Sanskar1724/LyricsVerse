@@ -11,7 +11,7 @@ import type { BackdropTone } from './Backdrop';
  */
 export interface ModeProps {
   song: Song;
-  /** Line currently on display (-1 before the first line). During the game, the upcoming line is held back. */
+  /** Line currently on display (-1 before the first line). */
   index: number;
   player: Player;
   /** A random look per line (font, entrance, palette…), fresh every session. */

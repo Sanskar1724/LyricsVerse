@@ -713,9 +713,6 @@ kbd {
 .player-screen.idle {
   cursor: none;
 }
-.player-screen.revealing .emotion-chip {
-  opacity: 0;
-}
 .transport-buttons {
   display: flex;
   gap: 8px;
@@ -890,225 +887,6 @@ kbd {
     opacity: 0;
     transform: translateY(8px);
   }
-}
-
-/* ------------------------------------------------------------ game */
-
-.scoreboard {
-  position: absolute;
-  z-index: 17; /* stays readable above the question backdrop */
-  top: 78px;
-  right: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-end;
-}
-.score-pill {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: rgba(10, 9, 18, 0.75);
-  border: 1px solid var(--line);
-  backdrop-filter: blur(10px);
-  transition:
-    transform 0.3s,
-    border-color 0.3s;
-}
-.score-pill.turn {
-  border-color: var(--accent);
-  transform: scale(1.06);
-  box-shadow: 0 0 20px rgba(255, 111, 181, 0.35);
-}
-.score-name {
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.score-value {
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.game-question-backdrop {
-  position: absolute;
-  inset: 0;
-  z-index: 15;
-  display: grid;
-  place-items: center;
-  background: rgba(3, 2, 8, 0.55);
-  backdrop-filter: blur(4px);
-  animation: fade-in 0.3s ease both;
-  padding: 20px;
-}
-.game-question {
-  text-align: center;
-  max-width: 640px;
-  width: 100%;
-  animation: pop-in 0.35s cubic-bezier(0.2, 1.3, 0.4, 1) both;
-}
-.game-question h2 {
-  font-size: 2rem;
-  margin: 6px 0 4px;
-}
-.turn-label {
-  color: var(--ink-2);
-}
-.guess-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin: 18px 0 10px;
-}
-.guess-btn {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 18px 20px;
-  border-radius: 16px;
-  border: 2px solid color-mix(in srgb, var(--emo) 60%, transparent);
-  background: color-mix(in srgb, var(--emo) 14%, rgba(0, 0, 0, 0.3));
-  cursor: pointer;
-  font-size: 1.3rem;
-  font-weight: 600;
-  transition:
-    transform 0.15s,
-    background 0.2s;
-}
-.guess-btn:hover {
-  transform: translateY(-2px) scale(1.02);
-  background: color-mix(in srgb, var(--emo) 28%, rgba(0, 0, 0, 0.3));
-}
-.guess-emoji {
-  font-size: 1.8rem;
-}
-.guess-key {
-  position: absolute;
-  top: 6px;
-  right: 10px;
-  font-size: 0.75rem;
-  color: var(--ink-3);
-}
-
-.game-reveal {
-  position: absolute;
-  z-index: 14;
-  left: 50%;
-  bottom: 104px;
-  transform: translateX(-50%);
-  width: min(720px, calc(100vw - 32px));
-  padding: 16px 22px;
-  border-radius: 20px;
-  background: rgba(10, 9, 18, 0.88);
-  border: 2px solid var(--emo);
-  box-shadow: 0 0 50px color-mix(in srgb, var(--emo) 35%, transparent);
-  text-align: center;
-  animation: reveal-in 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both;
-}
-.game-reveal.wrong {
-  animation:
-    reveal-in 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both,
-    shake 0.45s 0.3s ease both;
-}
-@keyframes reveal-in {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(20px) scale(0.9);
-  }
-}
-@keyframes shake {
-  20%,
-  60% {
-    transform: translateX(calc(-50% - 10px));
-  }
-  40%,
-  80% {
-    transform: translateX(calc(-50% + 10px));
-  }
-}
-.reveal-result {
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-.game-reveal.correct .reveal-result {
-  color: #b8ffcf;
-}
-.game-reveal.wrong .reveal-result {
-  color: #ffc2c7;
-}
-.reveal-line {
-  margin: 6px 0;
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--emo);
-  overflow-wrap: anywhere;
-}
-.reveal-actions {
-  margin-top: 8px;
-}
-.confetti {
-  position: absolute;
-  left: 50%;
-  top: 30%;
-  pointer-events: none;
-}
-.confetti i {
-  position: absolute;
-  width: 8px;
-  height: 12px;
-  border-radius: 2px;
-  background: hsl(calc(var(--i) * 26deg) 90% 65%);
-  animation: confetti 1s ease-out both;
-  --angle: calc(var(--i) * 25.7deg);
-}
-@keyframes confetti {
-  from {
-    transform: rotate(var(--angle)) translateY(0) scale(1);
-    opacity: 1;
-  }
-  to {
-    transform: rotate(var(--angle)) translateY(-140px) scale(0.4);
-    opacity: 0;
-  }
-}
-
-.player-count {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin: 14px 0;
-}
-.name-fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 14px;
-  margin-bottom: 8px;
-}
-.results-headline {
-  font-size: 1.4rem;
-  font-weight: 600;
-}
-.results-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.results-table th,
-.results-table td {
-  padding: 10px 8px;
-  border-bottom: 1px solid var(--line);
-  text-align: left;
-}
-.results-table th {
-  color: var(--ink-2);
-  font-weight: 500;
-  font-size: 0.85rem;
-}
-.results-table td.num {
-  text-align: right;
 }
 
 /* ------------------------------------------------------------ tap sync */
@@ -1619,41 +1397,16 @@ kbd {
   box-shadow: 0 0 8px rgba(236, 217, 168, 0.8);
   transform: scale(1.2);
 }
-.stars-tempo {
-  position: absolute;
-  left: 24px;
-  bottom: 100px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: rgba(236, 217, 168, 0.6);
-  font-size: 0.85rem;
-  letter-spacing: 0.08em;
-  pointer-events: none;
-}
-.stars-bar {
-  display: flex;
-  gap: 4px;
-}
-.stars-bar span {
-  width: 14px;
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(236, 217, 168, 0.18);
-}
-.stars-bar span.on {
-  background: #ecd9a8;
-  box-shadow: 0 0 6px rgba(236, 217, 168, 0.7);
-}
-.stars-bar span:first-child.on {
-  background: #fff6dc;
-  box-shadow: 0 0 10px #ecd9a8;
-}
+
+
+
+
+
 .stars-caption {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 96px;
+  bottom: 128px; /* above the histogram's zone labels */
   margin: 0;
   padding: 0 10vw;
   text-align: center;
@@ -1829,24 +1582,8 @@ kbd {
   }
 }
 
-.kin-underline {
-  position: absolute;
-  left: 8%;
-  right: 8%;
-  bottom: -0.32em;
-  width: 84%;
-  height: 0.3em;
-  overflow: visible;
-}
-.kin-underline path {
-  fill: none;
-  stroke: var(--c2);
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  filter: drop-shadow(0 0 6px var(--c2));
-}
+
+
 .kin-idle {
   opacity: 0.35;
   font-size: clamp(3rem, 9vw, 9rem);
@@ -1855,4 +1592,107 @@ kbd {
 .kin-chip {
   position: relative;
   margin-top: 6vh;
+}
+
+/* ------------------------------------------------------------ DJ studio: deck readout + record */
+
+.dj-hud {
+  position: absolute;
+  top: 80px;
+  left: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--c1) 45%, transparent);
+  background: rgba(0, 0, 0, 0.4);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  transition: border-color 0.8s;
+}
+.dj-live {
+  color: #ff4d5a;
+  animation: dj-blink 1.6s steps(2, start) infinite;
+}
+@keyframes dj-blink {
+  to {
+    opacity: 0.35;
+  }
+}
+.dj-bpm {
+  color: var(--c1);
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  transition: color 0.8s;
+}
+.dj-leds {
+  display: flex;
+  gap: 4px;
+}
+.dj-leds i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+}
+.dj-leds i.on {
+  background: var(--c1);
+  box-shadow: 0 0 8px var(--c1);
+}
+.dj-leds i:first-child.on {
+  background: #fff;
+  box-shadow: 0 0 10px #fff;
+}
+.tone-dark .dj-hud {
+  opacity: 0.75;
+}
+
+.dj-vinyl-wrap {
+  position: absolute;
+  right: -110px;
+  bottom: 120px;
+  width: 340px;
+  height: 340px;
+  opacity: 0.75;
+  pointer-events: none;
+}
+.tone-dark .dj-vinyl-wrap {
+  opacity: 0.35;
+}
+.dj-vinyl {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(circle at 50% 50%, #1a1a21 0 1.5px, #2b2b35 1.5px 3.5px),
+    #222;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.6),
+    0 0 0 2px rgba(255, 255, 255, 0.08),
+    0 0 40px color-mix(in srgb, var(--c1) 25%, transparent),
+    inset 0 0 0 6px #121216;
+  will-change: transform;
+}
+.dj-label {
+  position: absolute;
+  inset: 33%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #0b0b0e 0 5%, transparent 5.5%),
+    conic-gradient(from 0deg, var(--c1), var(--c2), var(--c1));
+  transition: background 0.8s;
+}
+/* A light reflection that stays still while the record spins under it. */
+.dj-vinyl-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 200deg, transparent 0 20%, rgba(255, 255, 255, 0.1) 25%, transparent 32% 70%, rgba(255, 255, 255, 0.07) 75%, transparent 80%);
 }

@@ -11,7 +11,13 @@ export const FONTS = ['sans', 'serif', 'hand', 'display'] as const;
 export const ENTRANCES = ['pop', 'rise', 'drop', 'slide', 'flip', 'unblur', 'wipe', 'zoom'] as const;
 export const FINISHES = ['solid', 'gradient', 'outline', 'glow'] as const;
 export const SCENES = ['aurora', 'nebula', 'sunset', 'prism', 'ocean'] as const;
-export const ORNAMENTS = ['none', 'underline', 'sparkles'] as const;
+export const ORNAMENTS = ['none', 'sparkles'] as const;
+/** DJ-studio background: how the live frequency histogram is drawn. */
+export const SPECTRUM_STYLES = ['mountain', 'bars', 'mirror', 'outline', 'leds'] as const;
+export const GRIDS = ['diamond', 'lines', 'none'] as const;
+export const PANELS = ['tinted', 'dark'] as const;
+/** Stage-light patterns. */
+export const LIGHTS = ['sweep', 'cross', 'strobe', 'still'] as const;
 /** Heartbeat-trace styles for the background graph. */
 export const BEAT_SHAPES = ['ecg', 'lubdub', 'spike', 'wave', 'zigzag'] as const;
 
@@ -21,6 +27,10 @@ export type Finish = (typeof FINISHES)[number];
 export type Scene = (typeof SCENES)[number];
 export type Ornament = (typeof ORNAMENTS)[number];
 export type BeatShape = (typeof BEAT_SHAPES)[number];
+export type SpectrumStyle = (typeof SPECTRUM_STYLES)[number];
+export type GridStyle = (typeof GRIDS)[number];
+export type PanelStyle = (typeof PANELS)[number];
+export type LightPattern = (typeof LIGHTS)[number];
 
 export interface LineLook {
   font: FontKey;
@@ -30,6 +40,13 @@ export interface LineLook {
   ornament: Ornament;
   /** How beats are drawn on the heartbeat graph while this line plays. */
   beat: BeatShape;
+  /** DJ-studio background for this line. */
+  spectrum: SpectrumStyle;
+  grid: GridStyle;
+  panel: PanelStyle;
+  lights: LightPattern;
+  /** Number of moving light beams, 2–5. */
+  beams: number;
   upper: boolean;
   italic: boolean;
   weight: number;
@@ -122,6 +139,11 @@ export function makeLooks(emotions: Emotion[], seed: number): LineLook[] {
       scene: pick(rand, SCENES, prev?.scene),
       ornament: pick(rand, ORNAMENTS),
       beat: pick(rand, BEAT_SHAPES, prev?.beat),
+      spectrum: pick(rand, SPECTRUM_STYLES, prev?.spectrum),
+      grid: pick(rand, GRIDS),
+      panel: pick(rand, PANELS),
+      lights: pick(rand, LIGHTS, prev?.lights),
+      beams: 2 + Math.floor(rand() * 4),
       upper: font === 'display' || (font === 'sans' && rand() < 0.3),
       italic: font === 'serif' && rand() < 0.6,
       weight: font === 'sans' ? (rand() < 0.5 ? 800 : 300) : font === 'serif' ? (rand() < 0.5 ? 700 : 500) : font === 'hand' ? 700 : 400,

@@ -10,5 +10,5 @@ test('finds the beat of an uploaded song and shows it in Stars', async ({ page }
   await page.getByTestId('start-button').click();
   await expect(page.getByTestId('toast').filter({ hasText: /Found the beat: 1(19|20|21) BPM/ })).toBeVisible({ timeout: 20000 });
   await page.keyboard.press('1');
-  await expect(page.getByTestId('mode-stars')).toContainText(/1(19|20|21) BPM/);
+  await expect(page.getByTestId('dj-bpm')).toHaveText(/1(19|20|21)\.\d BPM/);
 });

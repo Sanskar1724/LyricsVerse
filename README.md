@@ -1,6 +1,6 @@
 # LyricVerse 🎶
 
-Drop in a song and its lyrics, then watch the feelings come alive: weather that follows the mood, a chat where the singer texts you each line, kinetic words that dance to the beat, a "Guess the Feeling" party game, and a shareable Song DNA card.
+Drop in a song and its lyrics, then watch them come alive in a DJ-studio light show: words that land on the beat, a live frequency histogram, stage lights, a heart-monitor trace, and a shareable Song DNA card.
 
 Everything runs locally in your browser. No backend, no login, no uploads.
 
@@ -52,7 +52,7 @@ For songs with long instrumental breaks or repeated choruses, **⏱ Sync** (tap 
 | Key | Action |
 | --- | --- |
 | Space | Play / pause (continue in tap-sync) |
-| 1–4 | Stars, Kinetic, Karaoke, Tunnel (during the game, 1–4 pick an answer) |
+| 1–4 | Stars, Kinetic, Karaoke, Tunnel |
 | F | Full screen |
 | ← / → | Seek 5 s |
 | N / P | Next / previous line |
@@ -63,11 +63,17 @@ For songs with long instrumental breaks or repeated choruses, **⏱ Sync** (tap 
 - **Emotion analysis (offline):** each line gets one of joy, sadness, anger, love, longing, hope, fear, calm with an intensity 0–1. Uses a weighted lexicon with simple stemming, negation ("not happy" → sadness; Hindi post-negation "ख़ुशी नहीं"), intensifiers ("so", "never… so", CAPS, "!"), emojis and a small Hindi/Hinglish vocabulary. Themes (heartbreak, freedom, nostalgia, love, struggle, party, hope) come from keyword groups plus the emotion mix.
 - **Styles** (keys 1–4), all over a shared living background:
   - ✨ Stars: gold sparkle-stars on black. Every word pops in exactly on the beat, joined by fine lines; after seven words the set bursts away and a new one starts.
-  - 🔠 Kinetic: every line gets a random look: one of 4 fonts (clean sans, serif italic, handwriting, poster caps), 8 entrances (pop, rise, drop, slide, flip, un-blur, wipe, zoom), 4 finishes (solid, gradient, outline, glow), a tilt, and sometimes an underline swoosh or sparks. Emotional words are highlighted. Consecutive lines never repeat a font or entrance.
+  - 🔠 Kinetic: every line gets a random look: one of 4 fonts (clean sans, serif italic, handwriting, poster caps), 8 entrances (pop, rise, drop, slide, flip, un-blur, wipe, zoom), 4 finishes (solid, gradient, outline, glow), a tilt, and sometimes sparks. Emotional words are highlighted. Consecutive lines never repeat a font or entrance.
   - 🎤 Karaoke: each word fills with colour as it's sung, with a bouncing ball and the next line underneath.
   - 🌀 Tunnel: fly through rings of light that speed up with the music; words zoom out of the vanishing point.
-- **Living background:** a new scene for every line (aurora, nebula, sunset, prism or ocean) in colours built from the line's mood, cross-fading between lines; plus a heart-monitor trace that spikes on every beat. Each line has its own pulse style (heartbeat, lub-dub, seismograph spike, wave, zig-zag) and every beat varies a little. A fresh random look is rolled every time you open a song (add `?seed=123` to the URL to pin one).
-- **Guess the Feeling:** 1–4 players take turns; playback pauses before each line; 100 points + 25 per streak step (max +100); live scoreboard and results.
+- **DJ-studio background**, shared by every style:
+  - a live **frequency histogram** on a grid (like a photo histogram, but for sound), split into SUB · BASS · MIDS · HIGHS · AIR, with peak-hold markers. Without audio, a simulated spectrum moves with the beat;
+  - **stage lights** that sweep from the ceiling and flare on the beat, with an occasional strobe on beat 1;
+  - a **heart-monitor trace** that spikes on every beat, in a pulse style per line (heartbeat, lub-dub, seismograph spike, wave, zig-zag), each beat a little different;
+  - a **deck readout** (BPM, beat-of-the-bar lights, time remaining), LED level meters and a spinning record;
+  - a colour wash in the line's mood colours.
+
+  Rolled at random for every line: histogram style (filled mountain, stepped bars, mirrored, glowing outline, LED dots), grid (diamonds, lines, none), panel colouring, light pattern (sweep, cross, strobe, still) and number of beams. A fresh set of looks is rolled every time you open a song (add `?seed=123` to the URL to pin one).
 - **Song DNA:** donut of the emotion mix, top themes, the most emotional line, and a "mood heartbeat" graph. Download as a 1080×1350 PNG.
 - **Library & Mood diary:** saved songs (lyrics, timings, analysis; not the audio) and a day-by-day view of the moods you've listened to, in `localStorage`. If storage is full or blocked, you get a friendly message and the app keeps working in memory.
 
@@ -83,12 +89,12 @@ src/
     analysis/             lexicon.ts, lexiconAnalyzer.ts, themes.ts, index.ts (LyricAnalyzer interface)
     songBuilder.ts        lyrics + duration → analysed Song
     player.ts             audio file (Web Audio AnalyserNode, beat detection) or silent clock
-    game.ts               pure game reducer + scoring
+    looks.ts              random per-line looks (fonts, entrances, palettes, DJ background)
     storage.ts            safe localStorage, library, mood diary
     dna.ts                Song DNA stats + canvas card
     sample.ts             original sample song
   modes/                  types.ts (ModeProps), registry.ts, words.ts, and one file per mode
-  components/             Home, PlayerScreen, Transport, TapSync, DnaModal, Library, Diary, game/*
+  components/             Home, PlayerScreen, Transport, TapSync, TimingPanel, DnaModal, Library, Diary
 tests/
   unit/                   Vitest
   e2e/                    Playwright

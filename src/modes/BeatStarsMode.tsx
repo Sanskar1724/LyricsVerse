@@ -109,7 +109,6 @@ export function BeatStarsMode({ song, index, player }: ModeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const dotsRef = useRef<HTMLDivElement>(null);
-  const barRef = useRef<HTMLDivElement>(null);
   const stream = useMemo(() => wordStream(song), [song]);
   const grid = useMemo(() => beatGridFor(song), [song]);
   const live = useRef({ index, stream, grid, song });
@@ -152,7 +151,6 @@ export function BeatStarsMode({ song, index, player }: ModeProps) {
     };
     let lastSet = -2;
     let lastCount = -1;
-    let lastBeatInBar = -1;
     let raf = 0;
     let last = performance.now();
 
@@ -249,7 +247,7 @@ export function BeatStarsMode({ song, index, player }: ModeProps) {
       if (player.kind === 'audio') pulse = Math.max(pulse, en.pulse * 0.5);
       if (!player.playing) pulse *= 0.3;
 
-      // Which word is the newest one we may show? (During the game, upcoming lines stay hidden.)
+      // Which word is the newest one we may show? (Never one from a line that isn't on display yet.)
       let k = -1;
       let lo = 0;
       let hi = words.length - 1;
@@ -297,11 +295,6 @@ export function BeatStarsMode({ song, index, player }: ModeProps) {
         const dots = dotsRef.current?.children;
         if (dots) for (let i = 0; i < dots.length; i++) dots[i].classList.toggle('on', i < count);
       }
-      if (beatInBar !== lastBeatInBar) {
-        lastBeatInBar = beatInBar;
-        const bars = barRef.current?.children;
-        if (bars) for (let i = 0; i < bars.length; i++) bars[i].classList.toggle('on', i === beatInBar);
-      }
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
@@ -324,15 +317,6 @@ export function BeatStarsMode({ song, index, player }: ModeProps) {
         {Array.from({ length: SET_SIZE }, (_, i) => (
           <span key={i} />
         ))}
-      </div>
-      <div className="stars-tempo" aria-label={`${Math.round(grid.bpm)} beats per minute`}>
-        <div className="stars-bar" ref={barRef} aria-hidden>
-          <span />
-          <span />
-          <span />
-          <span />
-        </div>
-        <span>♩ {Math.round(grid.bpm)} BPM</span>
       </div>
       {line && (
         <p className="stars-caption" key={index} data-testid="current-line" dir="auto" style={{ '--emo': st?.color ?? GOLD } as CSSProperties}>

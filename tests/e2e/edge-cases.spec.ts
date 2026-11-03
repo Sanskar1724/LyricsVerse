@@ -109,7 +109,7 @@ test('attaching audio to a lyrics-only song re-spreads its timings', async ({ pa
   await page.getByTestId('start-button').click();
   await page.getByTestId('attach-audio-input').setInputFiles({ name: 'tune.wav', mimeType: 'audio/wav', buffer: makeWav(6) });
   await expect(page.getByTestId('toast').filter({ hasText: 'Playing with tune.wav' })).toBeVisible();
-  await expect(page.getByText('0:06')).toBeVisible();
+  await expect(page.getByTestId('transport').getByText('0:06')).toBeVisible();
   await page.getByTestId('attach-audio-input').setInputFiles({ name: 'bad.wav', mimeType: 'audio/wav', buffer: Buffer.from('nope'.repeat(100)) });
   await expect(page.getByTestId('toast').filter({ hasText: "couldn't be played" })).toBeVisible({ timeout: 15000 });
 });

@@ -86,6 +86,8 @@ export class Player {
 
   private energy: EnergySample = { level: 0, bass: 0, mid: 0, high: 0, beat: false, pulse: 0 };
   private lastSampleAt = 0;
+  private spec: Float32Array = new Float32Array(0);
+  private specAt = 0;
   private bassHistory: number[] = [];
   private lastBeatAt = -Infinity;
   private runningPeak = 0.08;
@@ -260,7 +262,7 @@ export class Player {
     const ctx = getContext();
     this.source = ctx.createMediaElementSource(this.audio);
     this.analyser = ctx.createAnalyser();
-    this.analyser.fftSize = 1024;
+    this.analyser.fftSize = 2048; // finer low-end resolution for the spectrum display
     this.analyser.smoothingTimeConstant = 0.72;
     this.source.connect(this.analyser);
     this.analyser.connect(ctx.destination);
@@ -363,6 +365,69 @@ export class Player {
     this.url = null;
     this.audio = null;
     this.file = null;
+  }
+
+  /** Lowest and highest frequency shown by spectrum(), in Hz. */
+  static readonly SPECTRUM_MIN_HZ = 30;
+  static readonly SPECTRUM_MAX_HZ = 16000;
+
+  /** Frequency of the edge of band `i` out of `n` log-spaced bands. */
+  static bandEdgeHz(i: number, n: number): number {
+    return Player.SPECTRUM_MIN_HZ * Math.pow(Player.SPECTRUM_MAX_HZ / Player.SPECTRUM_MIN_HZ, i / n);
+  }
+
+  /**
+   * The music's spectrum as `bands` log-spaced bands (0–1), smoothed for display.
+   * Without audio (silent clock) a plausible spectrum is simulated from the beat: kick, a wandering voice, hi-hats.
+   * The returned array is reused between calls; copy it if you need to keep it.
+   */
+  spectrum(bands: number): Float32Array {
+    if (this.spec.length !== bands) this.spec = new Float32Array(bands);
+    const now = performance.now();
+    if (now - this.specAt < 8) return this.spec;
+    this.specAt = now;
+    const en = this.sampleEnergy(); // refreshes freqData too
+    const out = this.spec;
+    const playing = this.playing;
+
+    if (playing && this.analyser && this.freqData) {
+      const binHz = (sharedContext?.sampleRate ?? 44100) / this.analyser.fftSize;
+      const data = this.freqData;
+      for (let i = 0; i < bands; i++) {
+        const lo = Math.max(1, Math.floor(Player.bandEdgeHz(i, bands) / binHz));
+        const hi = Math.max(lo + 1, Math.ceil(Player.bandEdgeHz(i + 1, bands) / binHz));
+        let peak = 0;
+        for (let b = lo; b < Math.min(hi, data.length); b++) peak = Math.max(peak, data[b]);
+        // Music gets quieter towards the treble: tilt it up a little so the highs are visible.
+        const target = Math.min(1, (peak / 255) * (0.85 + (i / bands) * 0.5));
+        out[i] += (target - out[i]) * (target > out[i] ? 0.6 : 0.15);
+      }
+      return out;
+    }
+
+    const t = this.currentTime;
+    const beats = (t * SILENT_BPM) / 60;
+    const kick = Math.exp(-(beats % 1) * 5);
+    const hat = Math.exp(-((beats * 2) % 1) * 7);
+    const voiceAt = 0.46 + 0.08 * Math.sin(t * 0.7);
+    for (let i = 0; i < bands; i++) {
+      const x = i / bands;
+      let target = 0;
+      if (playing) {
+        target =
+          0.32 * Math.exp(-((x - 0.3) ** 2) / 0.06) +
+          0.18 * (1 - x) +
+          0.75 * kick * Math.exp(-((x - 0.1) ** 2) / 0.004) +
+          (0.42 + 0.15 * Math.sin(t * 2.1)) * Math.exp(-((x - voiceAt) ** 2) / 0.008) +
+          0.3 * Math.exp(-((x - voiceAt - 0.12) ** 2) / 0.004) +
+          0.38 * hat * Math.exp(-((x - 0.84) ** 2) / 0.006) +
+          0.05 * Math.sin(i * 12.9898 + t * 9) +
+          0.08 * en.level;
+      }
+      target = Math.max(0, Math.min(1, target));
+      out[i] += (target - out[i]) * (target > out[i] ? 0.5 : 0.1);
+    }
+    return out;
   }
 
   get isDestroyed(): boolean {

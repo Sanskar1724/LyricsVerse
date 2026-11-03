@@ -12,11 +12,8 @@ export interface PlaybackState {
   playing: boolean;
 }
 
-/**
- * Follows a Player and re-renders only when the line changes, play state changes, or ~10×/s for the clock.
- * `beforeFrame` runs first in the same frame, so state it sets (e.g. a game pause) renders together with the new line.
- */
-export function usePlayback(player: Player, lines: LyricLine[], beforeFrame?: () => void): PlaybackState {
+/** Follows a Player and re-renders only when the line changes, play state changes, or ~10×/s for the clock. */
+export function usePlayback(player: Player, lines: LyricLine[]): PlaybackState {
   const [state, setState] = useState<PlaybackState>(() => ({
     time: player.currentTime,
     index: lastStartedIndex(lines, player.currentTime),
@@ -37,7 +34,6 @@ export function usePlayback(player: Player, lines: LyricLine[], beforeFrame?: ()
 
   useRaf((now) => {
     player.tick();
-    beforeFrame?.();
     const t = player.currentTime;
     const index = lastStartedIndex(lines, t);
     const prev = current.current;

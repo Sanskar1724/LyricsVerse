@@ -143,7 +143,7 @@ test('stars: words pop in on the beat, seven per set, then a new set starts', as
   const stars = page.getByTestId('mode-stars');
   const seek = page.getByTestId('seek');
   await expect(stars).toBeVisible();
-  await expect(stars).toContainText('92 BPM'); // no audio: steady grid matching the silent pulse
+  await expect(page.getByTestId('dj-bpm')).toHaveText('92.0 BPM'); // no audio: steady grid matching the silent pulse
 
   await seek.fill('1');
   await expect(stars).toHaveAttribute('data-set', '-1');

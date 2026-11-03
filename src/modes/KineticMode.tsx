@@ -36,7 +36,7 @@ function fontSizeClass(count: number, look: LineLook | null): string {
 }
 
 /**
- * The showpiece: every line gets its own random look (font, entrance, finish, tilt, ornament).
+ * The showpiece: every line gets its own random look (font, entrance, finish, tilt, sparkles).
  * Words land on the beat, emotional words are highlighted and burst with sparks, the line bows out with a drift.
  */
 export function KineticMode({ song, index, player, looks }: ModeProps) {
@@ -56,7 +56,6 @@ export function KineticMode({ song, index, player, looks }: ModeProps) {
   const accents = useMemo(() => schedule.map((_, k) => an?.words[k]?.emotion != null), [schedule, an]);
 
   const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
-  const underlineRef = useRef<SVGPathElement>(null);
   const live = useRef({ line, look, schedule, accents, index });
   live.current = { line, look, schedule, accents, index };
 
@@ -158,8 +157,6 @@ export function KineticMode({ song, index, player, looks }: ModeProps) {
             el.classList.add('burst');
           }
         }
-        const path = underlineRef.current;
-        if (path) path.style.strokeDashoffset = (1 - Math.min(1, Math.max(0, (t - ln.start) / 0.9))).toFixed(3);
       }
       raf = requestAnimationFrame(frame);
     };
@@ -209,11 +206,6 @@ export function KineticMode({ song, index, player, looks }: ModeProps) {
               {k < schedule.length - 1 ? ' ' : ''}
             </span>
           ))}
-          {look.ornament === 'underline' && (
-            <svg className="kin-underline" viewBox="0 0 400 24" preserveAspectRatio="none" aria-hidden>
-              <path ref={underlineRef} d="M6 16 C 90 4, 210 26, 394 10" pathLength={1} />
-            </svg>
-          )}
         </div>
       ) : (
         <div className="kin-idle" aria-hidden>

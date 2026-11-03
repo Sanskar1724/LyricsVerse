@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import type { Emotion, LyricLine, Song } from '../types';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { LyricLine, Song } from '../types';
 import { Player, PlayerError } from '../lib/player';
 import { lastStartedIndex } from '../lib/lyrics';
-import { gameReducer, initialGame, makeOptions } from '../lib/game';
 import { getStore, isInLibrary, logListen, PREFS_KEY, saveSong } from '../lib/storage';
 import { analyzeSongAudio, autoSyncSong, retimeForAudio, FriendlyError } from '../lib/songBuilder';
 import { usePlayback } from '../hooks/usePlayback';
@@ -13,9 +12,6 @@ import { Transport } from './Transport';
 import { TapSync } from './TapSync';
 import { TimingPanel } from './TimingPanel';
 import { DnaModal } from './DnaModal';
-import { GameSetup } from './game/GameSetup';
-import { GameOverlay, Scoreboard } from './game/GameOverlay';
-import { GameResults } from './game/GameResults';
 import { useToast } from './Toasts';
 
 interface Props {
@@ -26,17 +22,10 @@ interface Props {
   onExit: () => void;
 }
 
-type Overlay = null | 'dna' | 'gameSetup' | 'results';
+type Overlay = null | 'dna';
 
 interface Prefs {
   mode?: string;
-  playerNames?: string[];
-}
-
-function hashString(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-  return Math.abs(h);
 }
 
 function isTypingTarget(el: EventTarget | null): boolean {
@@ -60,7 +49,6 @@ export function PlayerScreen({ song, player, onSongChange, onReplace, onExit }: 
       ),
     [song.analysis, seed],
   );
-  const [game, dispatch] = useReducer(gameReducer, initialGame);
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [tapping, setTapping] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
@@ -70,39 +58,20 @@ export function PlayerScreen({ song, player, onSongChange, onReplace, onExit }: 
   const [blocked, setBlocked] = useState(false);
   const [idle, setIdle] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
-  const [names, setNames] = useState<string[]>(prefs.playerNames?.length ? prefs.playerNames : ['', '']);
   const [inLibrary, setInLibrary] = useState(() => isInLibrary(song.id, store));
   const [rate, setRate] = useState(player.rate);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const audioInput = useRef<HTMLInputElement>(null);
-  const gameRef = useRef(game);
-  gameRef.current = game;
   const songRef = useRef(song);
   songRef.current = song;
   const tappingRef = useRef(tapping);
   tappingRef.current = tapping;
-  const askedRef = useRef(-1);
   const loggedRef = useRef(false);
   const idleTimer = useRef(0);
 
-  // --- Game: pause right as an unanswered line starts, and ask about it.
-  const checkGame = useCallback(() => {
-    const g = gameRef.current;
-    if ((g.phase !== 'playing' && g.phase !== 'reveal') || !player.playing) return;
-    const s = songRef.current;
-    const t = player.currentTime;
-    const idx = lastStartedIndex(s.lines, t);
-    if (idx < 0 || askedRef.current === idx || g.answeredLines.includes(idx) || t >= s.lines[idx].end) return;
-    askedRef.current = idx;
-    player.pause();
-    const correct = s.analysis.lines[idx].emotion;
-    if (g.phase === 'reveal') dispatch({ type: 'continue' });
-    dispatch({ type: 'ask', lineIndex: idx, correctEmotion: correct, options: makeOptions(correct, idx + hashString(s.id)) });
-  }, [player]);
-
-  const playback = usePlayback(player, song.lines, checkGame);
-  const displayIndex = game.phase === 'question' ? game.lineIndex - 1 : playback.index;
+  const playback = usePlayback(player, song.lines);
+  const displayIndex = playback.index;
 
   // --- Player events
   useEffect(
@@ -122,13 +91,7 @@ export function PlayerScreen({ song, player, onSongChange, onReplace, onExit }: 
         } else if (e === 'error') {
           toast('The audio stopped unexpectedly. The file may be damaged.', 'error');
         } else if (e === 'ended') {
-          const g = gameRef.current;
-          if (g.phase !== 'off' && g.phase !== 'finished') {
-            dispatch({ type: 'finish' });
-            setOverlay('results');
-          } else if (!tappingRef.current && g.phase === 'off') {
-            setOverlay('dna');
-          }
+          if (!tappingRef.current) setOverlay('dna');
         }
       }),
     [player, toast],
@@ -143,15 +106,12 @@ export function PlayerScreen({ song, player, onSongChange, onReplace, onExit }: 
   };
 
   const togglePlay = () => {
-    if (gameRef.current.phase === 'question' || tappingRef.current) return;
+    if (tappingRef.current) return;
     if (player.playing) player.pause();
     else void player.play();
   };
 
-  const seek = (t: number) => {
-    if (gameRef.current.phase === 'question') return;
-    player.seek(t);
-  };
+  const seek = (t: number) => player.seek(t);
 
   const prevLine = () => {
     const t = player.currentTime;
@@ -161,49 +121,14 @@ export function PlayerScreen({ song, player, onSongChange, onReplace, onExit }: 
   };
 
   const nextLine = () => {
-    const g = gameRef.current;
-    if (g.phase === 'question') return;
     const i = lastStartedIndex(song.lines, player.currentTime);
     const next = song.lines[i + 1];
-    if (g.phase === 'playing' || g.phase === 'reveal') {
-      if (!next) {
-        player.pause();
-        dispatch({ type: 'finish' });
-        setOverlay('results');
-        return;
-      }
-      player.seek(next.start);
-      void player.play();
-      return;
-    }
     player.seek(next ? next.start : song.duration);
   };
 
   const changeRate = (r: number) => {
     player.rate = r;
     setRate(player.rate);
-  };
-
-  const startGame = (playerNames: string[]) => {
-    setNames(playerNames);
-    savePrefs({ playerNames });
-    setOverlay(null);
-    askedRef.current = -1;
-    dispatch({ type: 'start', names: playerNames });
-    player.pause();
-    player.seek(0);
-    void player.play();
-  };
-
-  const guess = (e: Emotion) => {
-    if (gameRef.current.phase !== 'question') return;
-    dispatch({ type: 'guess', emotion: e });
-    void player.play(); // the revealed line plays while the result shows
-  };
-
-  const quitGame = () => {
-    dispatch({ type: 'quit' });
-    setOverlay(null);
   };
 
   const save = () => {
@@ -284,8 +209,8 @@ export function PlayerScreen({ song, player, onSongChange, onReplace, onExit }: 
   }, []);
 
   // --- Keyboard shortcuts (bound once; reads the latest handlers through a ref)
-  const handlers = useRef({ togglePlay, switchMode, toggleFullscreen, seek, nextLine, prevLine, guess });
-  handlers.current = { togglePlay, switchMode, toggleFullscreen, seek, nextLine, prevLine, guess };
+  const handlers = useRef({ togglePlay, switchMode, toggleFullscreen, seek, nextLine, prevLine });
+  handlers.current = { togglePlay, switchMode, toggleFullscreen, seek, nextLine, prevLine };
   const overlayRef = useRef(overlay);
   overlayRef.current = overlay;
 
@@ -293,16 +218,7 @@ export function PlayerScreen({ song, player, onSongChange, onReplace, onExit }: 
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || isTypingTarget(e.target) || tappingRef.current) return;
       const h = handlers.current;
-      const g = gameRef.current;
       const isSpace = e.code === 'Space' || e.key === ' ';
-      if (g.phase === 'question') {
-        const n = parseInt(e.key, 10);
-        if (n >= 1 && n <= g.options.length) {
-          e.preventDefault();
-          h.guess(g.options[n - 1]);
-        } else if (isSpace) e.preventDefault();
-        return;
-      }
       if (overlayRef.current) return; // modals handle their own keys
       const onSlider = e.target instanceof HTMLInputElement && e.target.type === 'range';
       if (isSpace) {
@@ -340,16 +256,15 @@ export function PlayerScreen({ song, player, onSongChange, onReplace, onExit }: 
     idleTimer.current = window.setTimeout(() => setIdle(true), 3000);
   };
   useEffect(() => () => window.clearTimeout(idleTimer.current), []);
-  const chromeHidden = idle && playback.playing && !overlay && !tapping && !adjusting && game.phase !== 'question';
+  const chromeHidden = idle && playback.playing && !overlay && !tapping && !adjusting;
 
   const mode = findMode(modeId);
   const ModeComponent = mode.Component;
-  const gameActive = game.phase !== 'off';
 
   return (
     <div
       ref={rootRef}
-      className={`screen player-screen ${chromeHidden ? 'idle' : ''} ${fullscreen ? 'is-fullscreen' : ''} ${game.phase === 'reveal' ? 'revealing' : ''}`}
+      className={`screen player-screen ${chromeHidden ? 'idle' : ''} ${fullscreen ? 'is-fullscreen' : ''}`}
       onMouseMove={wake}
       data-testid="player-screen"
       data-mode={mode.id}
@@ -390,15 +305,7 @@ export function PlayerScreen({ song, player, onSongChange, onReplace, onExit }: 
           ))}
         </nav>
         <div className="top-actions">
-          <button
-            className={`btn small ${gameActive ? 'active' : ''}`}
-            onClick={() => (gameActive ? quitGame() : setOverlay('gameSetup'))}
-            disabled={tapping}
-            data-testid="open-game"
-          >
-            {gameActive ? '✖ End game' : '🎮 Game'}
-          </button>
-          <button className="btn small" onClick={() => setOverlay('dna')} disabled={game.phase === 'question'} data-testid="open-dna">
+          <button className="btn small" onClick={() => setOverlay('dna')} data-testid="open-dna">
             🧬 DNA
           </button>
           <button className="btn small" onClick={save} data-testid="save-song">
@@ -410,7 +317,7 @@ export function PlayerScreen({ song, player, onSongChange, onReplace, onExit }: 
               player.pause();
               setTapping(true);
             }}
-            disabled={gameActive || tapping || adjusting}
+            disabled={tapping || adjusting}
             title="Record line timings by tapping Space"
             data-testid="open-tapsync"
           >
@@ -419,7 +326,7 @@ export function PlayerScreen({ song, player, onSongChange, onReplace, onExit }: 
           <button
             className={`btn small ${adjusting ? 'active' : ''}`}
             onClick={() => setAdjusting(true)}
-            disabled={gameActive || tapping || adjusting}
+            disabled={tapping || adjusting}
             title="Lyrics too fast, slow, early or late? Fix them while the song plays"
             data-testid="open-timing"
           >
@@ -442,9 +349,6 @@ export function PlayerScreen({ song, player, onSongChange, onReplace, onExit }: 
         </div>
       </header>
 
-      {gameActive && <Scoreboard game={game} />}
-      <GameOverlay game={game} song={song} onGuess={guess} onNext={nextLine} onQuit={quitGame} />
-
       {tapping && <TapSync lines={song.lines} player={player} onSave={saveTimings} onCancel={() => setTapping(false)} />}
       {adjusting && (
         <TimingPanel
@@ -463,7 +367,7 @@ export function PlayerScreen({ song, player, onSongChange, onReplace, onExit }: 
           syncing={syncing}
         />
       )}
-      {song.timing === 'spread' && !hideEstimateHint && !adjusting && !tapping && !gameActive && (
+      {song.timing === 'spread' && !hideEstimateHint && !adjusting && !tapping && (
         <div className="estimate-hint" role="note" data-testid="estimate-hint">
           <span>
             ⏱ These lyrics had no timestamps, so their timing is <strong>estimated</strong>.{' '}
@@ -492,7 +396,7 @@ export function PlayerScreen({ song, player, onSongChange, onReplace, onExit }: 
         index={displayIndex}
         playing={playback.playing}
         rate={rate}
-        disabled={game.phase === 'question' || tapping}
+        disabled={tapping}
         onToggle={togglePlay}
         onSeek={seek}
         onPrev={prevLine}
@@ -500,21 +404,17 @@ export function PlayerScreen({ song, player, onSongChange, onReplace, onExit }: 
         onRate={changeRate}
       />
 
-      {!started && !overlay && !tapping && !gameActive && (
+      {!started && !overlay && !tapping && (
         <div className="start-overlay">
           <button className="start-btn" onClick={() => void player.play()} data-testid="start-overlay">
             <span className="start-icon">▶</span>
             <span>{blocked ? 'Your browser paused the audio. Click to start' : 'Click to start the show'}</span>
-            <span className="muted small">Space = play/pause · 1/2/3 = modes · F = full screen</span>
+            <span className="muted small">Space = play/pause · 1–4 = styles · F = full screen</span>
           </button>
         </div>
       )}
 
       {overlay === 'dna' && <DnaModal song={song} onClose={() => setOverlay(null)} />}
-      {overlay === 'gameSetup' && <GameSetup initialNames={names} onStart={startGame} onClose={() => setOverlay(null)} />}
-      {overlay === 'results' && (
-        <GameResults game={game} onPlayAgain={() => startGame(names)} onShowDna={() => setOverlay('dna')} onClose={quitGame} />
-      )}
     </div>
   );
 }

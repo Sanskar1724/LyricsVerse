@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ENTRANCES, FONTS, hexToHsl, hslToHex, makeLooks, paletteFor, rng, SCENES } from '../../src/lib/looks';
+import { ENTRANCES, FONTS, hexToHsl, hslToHex, LIGHTS, makeLooks, paletteFor, rng, SCENES, SPECTRUM_STYLES } from '../../src/lib/looks';
 import { EMOTIONS, type Emotion } from '../../src/types';
 
 const emotions: Emotion[] = Array.from({ length: 200 }, (_, i) => EMOTIONS[i % EMOTIONS.length]);
@@ -17,6 +17,8 @@ describe('line looks', () => {
       expect(looks[i].entrance).not.toBe(looks[i - 1].entrance);
       expect(looks[i].scene).not.toBe(looks[i - 1].scene);
       expect(looks[i].beat).not.toBe(looks[i - 1].beat);
+      expect(looks[i].spectrum).not.toBe(looks[i - 1].spectrum);
+      expect(looks[i].lights).not.toBe(looks[i - 1].lights);
     }
   });
 
@@ -25,6 +27,10 @@ describe('line looks', () => {
     expect(new Set(looks.map((l) => l.font)).size).toBe(FONTS.length);
     expect(new Set(looks.map((l) => l.entrance)).size).toBe(ENTRANCES.length);
     expect(new Set(looks.map((l) => l.scene)).size).toBe(SCENES.length);
+    expect(new Set(looks.map((l) => l.spectrum)).size).toBe(SPECTRUM_STYLES.length);
+    expect(new Set(looks.map((l) => l.lights)).size).toBe(LIGHTS.length);
+    expect(looks.some((l) => (l.ornament as string) === 'underline')).toBe(false);
+    for (const l of looks) expect(l.beams).toBeGreaterThanOrEqual(2), expect(l.beams).toBeLessThanOrEqual(5);
   });
 
   it('keeps tilt and offset gentle and the poster font in capitals', () => {
